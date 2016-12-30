@@ -17,18 +17,22 @@ class ViewController: UIViewController {
   @IBOutlet weak var button: UIButton!
     
   // MARK: ivars
-  private var count = 0
   private let disposeBag = DisposeBag()
+	private lazy var presenter: Presenter = {
+		let eventProvider = EventProvider(buttonTapped: self.button.rx.tap.asObservable())
+		return Presenter(eventProvider: eventProvider)
+	}()
     
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    self.button.rx.tap
-        .debug("button tap")
-        .subscribe(onNext: { [unowned self] _ in
-          self.count += 1
-          self.label.text = "You have tapped that button \(self.count) times."
-        }).addDisposableTo(disposeBag)
+		self.presenter.count
+			.asDriver(onErrorJustReturn: 0)
+			.map { currentCount in
+				return "You have tapped that button \(currentCount) times."
+			}
+			.drive(self.label.rx.text)
+			.addDisposableTo(disposeBag)
   }
 
  }
